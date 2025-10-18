@@ -1,0 +1,8 @@
+{
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "/home/srinidhi/Documents/ne/mysql-connector-java-8.0.28.jar",
+        "/home/srinidhi/Documents/ne/rs2xml.jar",
+        "/home/srinidhi/Downloads/mysql-connector-java-8.0.28.jar"
+    ]
+}
