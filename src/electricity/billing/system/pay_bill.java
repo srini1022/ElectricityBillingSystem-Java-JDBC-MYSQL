@@ -95,11 +95,15 @@ public class pay_bill extends JFrame implements ActionListener {
 
         try{
             database c = new database();
-            ResultSet resultSet = c.statement.executeQuery("select * from new_customer where meter_no = '"+meter+"'");
+            java.sql.PreparedStatement ps = c.prepareStatement("SELECT name FROM customers WHERE meter_no = ?");
+            ps.setString(1, meter);
+            ResultSet resultSet = ps.executeQuery();
             while (resultSet.next()){
                 meterNumberText.setText(meter);
                 nameText.setText(resultSet.getString("name"));
             }
+            c.closeStatement(ps);
+            c.closeConnection();
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -109,12 +113,20 @@ public class pay_bill extends JFrame implements ActionListener {
             public void itemStateChanged(ItemEvent e) {
                 database c = new database();
                 try{
-                    ResultSet resultSet = c.statement.executeQuery("select * from bill where meter_no = '"+meter+"' and month = '"+searchmonthcho.getSelectedItem()+"'");
-                    while (resultSet.next()){
-                        unitText.setText(resultSet.getString("unit"));
-                        totalBillText.setText(resultSet.getString("total_bill"));
-                        statusText.setText(resultSet.getString("status"));
-                    }
+                        try{
+                        java.sql.PreparedStatement ps = c.prepareStatement("SELECT b.units, b.total_amount, b.status FROM bills b JOIN meters m ON b.meter_id = m.id WHERE m.meter_number = ? AND b.month = ?");
+                        ps.setString(1, meter);
+                        ps.setString(2, searchmonthcho.getSelectedItem());
+                        ResultSet resultSet = ps.executeQuery();
+                        while (resultSet.next()){
+                            unitText.setText(resultSet.getString("units"));
+                            totalBillText.setText(resultSet.getString("total_amount"));
+                            statusText.setText(resultSet.getString("status"));
+                        }
+                        c.closeStatement(ps);
+                        }catch (Exception E){
+                            E.printStackTrace();
+                        }
                 }catch (Exception E){
                     E.printStackTrace();
                 }
@@ -144,7 +156,30 @@ public class pay_bill extends JFrame implements ActionListener {
         if (e.getSource()==pay){
             try{
                 database c = new database();
-                c.statement.executeUpdate("update bill set status = 'Paid' where meter_no = '"+meter+"' and month = '"+searchmonthcho.getSelectedItem()+"'");
+                // find bill id
+                java.sql.PreparedStatement psFind = c.prepareStatement("SELECT b.id, b.total_amount FROM bills b JOIN meters m ON b.meter_id = m.id WHERE m.meter_number = ? AND b.month = ? LIMIT 1");
+                psFind.setString(1, meter);
+                psFind.setString(2, searchmonthcho.getSelectedItem());
+                ResultSet rs = psFind.executeQuery();
+                if (rs.next()){
+                    int billId = rs.getInt("id");
+                    double amount = rs.getDouble("total_amount");
+                    java.sql.PreparedStatement psUpd = c.prepareStatement("UPDATE bills SET status = 'Paid' WHERE id = ?");
+                    psUpd.setInt(1, billId);
+                    psUpd.executeUpdate();
+
+                    java.sql.PreparedStatement psPay = c.prepareStatement("INSERT INTO payments (bill_id, amount, method, transaction_ref) VALUES (?, ?, ?, ?)");
+                    psPay.setInt(1, billId);
+                    psPay.setDouble(2, amount);
+                    psPay.setString(3, "Cash");
+                    psPay.setString(4, "");
+                    psPay.executeUpdate();
+
+                    c.closeStatement(psUpd);
+                    c.closeStatement(psPay);
+                }
+                c.closeStatement(psFind);
+                c.closeConnection();
             }catch (Exception E){
                 E.printStackTrace();
             }

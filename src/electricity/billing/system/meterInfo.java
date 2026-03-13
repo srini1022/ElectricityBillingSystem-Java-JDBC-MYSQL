@@ -125,12 +125,30 @@ public class meterInfo extends JFrame implements ActionListener {
             String sbillTyp = billtypCho.getSelectedItem();
             String sday ="30";
 
-            String query_meterInfo = "insert into meter_info values('"+smeterNum+"','"+smeterLoc+"','"+smeterTyp+"','"+sphaseCode+"','"+sbillTyp+"','"+sday+"')";
             try{
                 database c= new database();
-                c.statement.executeUpdate(query_meterInfo);
+                // find customer id from customers table
+                java.sql.PreparedStatement psFind = c.prepareStatement("SELECT id FROM customers WHERE meter_no = ?");
+                psFind.setString(1, smeterNum);
+                java.sql.ResultSet rs = psFind.executeQuery();
+                int custId = -1;
+                if (rs.next()) custId = rs.getInt("id");
 
-                JOptionPane.showMessageDialog(null,"Meter Information Submited Successfully");
+                java.sql.PreparedStatement psIns = c.prepareStatement("INSERT INTO meters (meter_number, customer_id, meter_location, meter_type, phase_code, bill_type, days) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                psIns.setString(1, smeterNum);
+                if (custId > 0) psIns.setInt(2, custId); else psIns.setNull(2, java.sql.Types.INTEGER);
+                psIns.setString(3, smeterLoc);
+                psIns.setString(4, smeterTyp);
+                psIns.setString(5, sphaseCode);
+                psIns.setString(6, sbillTyp);
+                psIns.setInt(7, Integer.parseInt(sday));
+                psIns.executeUpdate();
+
+                c.closeStatement(psFind);
+                c.closeStatement(psIns);
+                c.closeConnection();
+
+                JOptionPane.showMessageDialog(null,"Meter Information Submitted Successfully");
                 setVisible(false);
             }catch (Exception E){
                 E.printStackTrace();

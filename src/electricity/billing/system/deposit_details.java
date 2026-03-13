@@ -29,10 +29,13 @@ public class deposit_details extends JFrame implements ActionListener {
 
         try{
             database c= new database();
-            ResultSet resultSet = c.statement.executeQuery("select * from bill");
+            java.sql.PreparedStatement ps = c.prepareStatement("SELECT DISTINCT m.meter_number FROM meters m JOIN bills b ON m.id = b.meter_id");
+            ResultSet resultSet = ps.executeQuery();
             while (resultSet.next()){
-                searchMeterCho.add(resultSet.getString("meter_no"));
+                searchMeterCho.add(resultSet.getString("meter_number"));
             }
+            c.closeStatement(ps);
+            c.closeConnection();
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -62,8 +65,11 @@ public class deposit_details extends JFrame implements ActionListener {
         table = new JTable();
         try{
             database c =new database();
-            ResultSet resultSet = c.statement.executeQuery("select * from bill");
+            java.sql.PreparedStatement ps = c.prepareStatement("SELECT b.id, m.meter_number, b.month, b.year, b.units, b.total_amount, b.status, b.created_at FROM bills b JOIN meters m ON b.meter_id = m.id");
+            ResultSet resultSet = ps.executeQuery();
             table.setModel(DbUtils.resultSetToTableModel(resultSet));
+            c.closeStatement(ps);
+            c.closeConnection();
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -98,11 +104,15 @@ public class deposit_details extends JFrame implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource()==search){
-            String query_search = "select * from bill where meter_no = '"+searchMeterCho.getSelectedItem()+"' and month = '"+searchMonthCho.getSelectedItem()+"'" ;
             try{
                 database c = new database();
-                ResultSet resultSet = c.statement.executeQuery(query_search);
+                java.sql.PreparedStatement ps = c.prepareStatement("SELECT b.id, m.meter_number, b.month, b.year, b.units, b.total_amount, b.status, b.created_at FROM bills b JOIN meters m ON b.meter_id = m.id WHERE m.meter_number = ? AND b.month = ?");
+                ps.setString(1, searchMeterCho.getSelectedItem());
+                ps.setString(2, searchMonthCho.getSelectedItem());
+                ResultSet resultSet = ps.executeQuery();
                 table.setModel(DbUtils.resultSetToTableModel(resultSet));
+                c.closeStatement(ps);
+                c.closeConnection();
             }catch (Exception E){
                 E.printStackTrace();
             }

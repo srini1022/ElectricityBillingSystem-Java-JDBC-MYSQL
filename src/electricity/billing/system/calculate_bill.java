@@ -8,92 +8,106 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.sql.ResultSet;
 
-public class calculate_bill extends JFrame implements ActionListener{
+public class calculate_bill extends JFrame implements ActionListener {
     JLabel nameText, addressText;
     TextField unitText;
-    Choice meternumCho,monthCho;
+    Choice meternumCho, monthCho;
     JButton submit, cancel;
-    calculate_bill(){
+
+    calculate_bill() {
 
         JPanel panel = new JPanel();
         panel.setLayout(null);
-        panel.setBackground(new Color(214,195,247));
+        panel.setBackground(new Color(214, 195, 247));
         add(panel);
 
         JLabel heading = new JLabel("Calculate Electricity Bill");
-        heading.setBounds(70,10,300,20);
-        heading.setFont(new Font("Tahoma",Font.BOLD,20));
+        heading.setBounds(70, 10, 300, 20);
+        heading.setFont(new Font("Tahoma", Font.BOLD, 20));
         panel.add(heading);
 
         JLabel meternum = new JLabel("Meter Number");
-        meternum.setBounds(50,80,100,20);
+        meternum.setBounds(50, 80, 100, 20);
         panel.add(meternum);
 
         meternumCho = new Choice();
         try {
             database c = new database();
-            ResultSet resultSet = c.statement.executeQuery("select * from new_customer");
-            while (resultSet.next()){
-                meternumCho.add(resultSet.getString("meter_no"));
+            java.sql.PreparedStatement ps = c.prepareStatement("SELECT meter_number FROM meters");
+            ResultSet resultSet = ps.executeQuery();
+            while (resultSet.next()) {
+                meternumCho.add(resultSet.getString("meter_number"));
             }
-        }catch (Exception E){
+            c.closeStatement(ps);
+            c.closeConnection();
+        } catch (Exception E) {
             E.printStackTrace();
         }
-        meternumCho.setBounds(180,80,100,20);
+        meternumCho.setBounds(180, 80, 100, 20);
         panel.add(meternumCho);
 
         JLabel name = new JLabel("Name");
-        name.setBounds(50,120,100,20);
+        name.setBounds(50, 120, 100, 20);
         panel.add(name);
 
         nameText = new JLabel("");
-        nameText.setBounds(180,120,150,20);
+        nameText.setBounds(180, 120, 150, 20);
         panel.add(nameText);
 
         JLabel address = new JLabel("Address");
-        address.setBounds(50,160,100,20);
+        address.setBounds(50, 160, 100, 20);
         panel.add(address);
 
         addressText = new JLabel("");
-        addressText.setBounds(180,160,150,20);
+        addressText.setBounds(180, 160, 150, 20);
         panel.add(addressText);
 
         try {
-            database c= new database();
-            ResultSet resultSet = c.statement.executeQuery("select * from new_customer where meter_no = '"+meternumCho.getSelectedItem()+"' ");
-            while (resultSet.next()){
+            database c = new database();
+            java.sql.PreparedStatement ps = c.prepareStatement(
+                    "SELECT c.name, c.address FROM customers c JOIN meters m ON c.id = m.customer_id WHERE m.meter_number = ?");
+            ps.setString(1, meternumCho.getSelectedItem());
+            ResultSet resultSet = ps.executeQuery();
+            while (resultSet.next()) {
                 nameText.setText(resultSet.getString("name"));
                 addressText.setText(resultSet.getString("address"));
             }
-        }catch (Exception E){
+            c.closeStatement(ps);
+            c.closeConnection();
+        } catch (Exception E) {
             E.printStackTrace();
         }
         meternumCho.addItemListener(new ItemListener() {
             @Override
             public void itemStateChanged(ItemEvent e) {
                 try {
-                    database c= new database();
-                    ResultSet resultSet = c.statement.executeQuery("select * from new_customer where meter_no = '"+meternumCho.getSelectedItem()+"' ");
-                    while (resultSet.next()){
+                    database c = new database();
+                    java.sql.PreparedStatement ps = c.prepareStatement(
+                            "SELECT c.name, c.address FROM customers c JOIN meters m ON c.id = m.customer_id WHERE m.meter_number = ?");
+                    ps.setString(1, meternumCho.getSelectedItem());
+                    ResultSet resultSet = ps.executeQuery();
+                    while (resultSet.next()) {
                         nameText.setText(resultSet.getString("name"));
                         addressText.setText(resultSet.getString("address"));
                     }
-                }catch (Exception E){
+                    c.closeStatement(ps);
+                    c.closeConnection();
+                } catch (Exception E) {
                     E.printStackTrace();
                 }
             }
         });
 
         JLabel unitconsumed = new JLabel("Unit Consumed");
-        unitconsumed.setBounds(50,200,100,20);
+        unitconsumed.setBounds(50, 200, 100, 20);
         panel.add(unitconsumed);
 
         unitText = new TextField();
-        unitText.setBounds(180,200,150,20);
+        unitText.setBounds(180, 200, 150, 20);
         panel.add(unitText);
 
         JLabel month = new JLabel("Month");
-        month.setBounds(50,240,100,20);
+        month.setBounds(50, 240, 100, 20);
         panel.add(month);
 
         monthCho = new Choice();
@@ -109,76 +123,116 @@ public class calculate_bill extends JFrame implements ActionListener{
         monthCho.add("October");
         monthCho.add("November");
         monthCho.add("December");
-        monthCho.setBounds(180,240,150,20);
+        monthCho.setBounds(180, 240, 150, 20);
         panel.add(monthCho);
 
-
         submit = new JButton("Submit");
-        submit.setBounds(80,300,100,25);
+        submit.setBounds(80, 300, 100, 25);
         submit.setBackground(Color.black);
         submit.setForeground(Color.white);
         submit.addActionListener(this);
         panel.add(submit);
 
         cancel = new JButton("Cancel");
-        cancel.setBounds(220,300,100,25);
+        cancel.setBounds(220, 300, 100, 25);
         cancel.setBackground(Color.black);
         cancel.setForeground(Color.white);
         cancel.addActionListener(this);
         panel.add(cancel);
 
         setLayout(new BorderLayout());
-        add(panel,"Center");
+        add(panel, "Center");
         ImageIcon imageIcon = new ImageIcon(ClassLoader.getSystemResource("icon/budget.png"));
-        Image image = imageIcon.getImage().getScaledInstance(250,200,Image.SCALE_DEFAULT);
+        Image image = imageIcon.getImage().getScaledInstance(250, 200, Image.SCALE_DEFAULT);
         ImageIcon imageIcon1 = new ImageIcon(image);
         JLabel imageLabel = new JLabel(imageIcon1);
-        add(imageLabel,"East");
+        add(imageLabel, "East");
 
-        setSize(650,400);
-        setLocation(400,200);
+        setSize(650, 400);
+        setLocation(400, 200);
         setVisible(true);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == submit){
+        if (e.getSource() == submit) {
             String smeterNo = meternumCho.getSelectedItem();
             String sunit = unitText.getText();
             String smonth = monthCho.getSelectedItem();
 
-            int totalBill =0;
-            int units=Integer.parseInt(sunit);
-            String query_tax = "select * from tax";
-            try{
+            double totalBill = 0;
+            int units = Integer.parseInt(sunit);
+            try {
                 database c = new database();
-                ResultSet resultSet = c.statement.executeQuery(query_tax);
-                while (resultSet.next()){
-                    totalBill += units * Integer.parseInt(resultSet.getString("cost_per_unit"));
-                    totalBill += Integer.parseInt(resultSet.getString("meter_rent"));
-                    totalBill += Integer.parseInt(resultSet.getString("service_charge"));
-                    totalBill += Integer.parseInt(resultSet.getString("swacch_bharat"));
-                    totalBill += Integer.parseInt(resultSet.getString("fixed_tax"));
 
+                java.sql.PreparedStatement psTax = c
+                        .prepareStatement("SELECT * FROM taxes ORDER BY effective_from DESC LIMIT 1");
+                ResultSet rsTax = psTax.executeQuery();
+                if (rsTax.next()) {
+                    totalBill += units * rsTax.getDouble("cost_per_unit");
+                    totalBill += rsTax.getDouble("meter_rent");
+                    totalBill += rsTax.getDouble("service_charge");
+                    totalBill += rsTax.getDouble("swachh_bharat");
+                    totalBill += rsTax.getDouble("fixed_tax");
                 }
-            }catch (Exception E){
-                E.printStackTrace();
-            }
-            String query_total_bill = "insert into bill values('"+smeterNo+"', '"+smonth+"','"+sunit+"', '"+totalBill+"','Not Paid')";
-            try{
-                database c = new database();
-                c.statement.executeUpdate(query_total_bill);
+                c.closeStatement(psTax);
 
-                JOptionPane.showMessageDialog(null,"Customer Bill Updated Successfully");
+                // Find meter id for selected meter_number
+                java.sql.PreparedStatement psMeter = c.prepareStatement("SELECT id FROM meters WHERE meter_number = ?");
+                psMeter.setString(1, smeterNo);
+                ResultSet rsMeter = psMeter.executeQuery();
+                int meterId = -1;
+                if (rsMeter.next())
+                    meterId = rsMeter.getInt("id");
+
+                // If meter_id not found, we can't proceed
+                if (meterId < 0) {
+                    JOptionPane.showMessageDialog(null, "Meter record not found. Please add meter info first.");
+                    c.closeStatement(psMeter);
+                    c.closeConnection();
+                    return;
+                }
+
+                // Ensure we don't create duplicate bills for the same month/year
+                java.sql.PreparedStatement psCheck = c.prepareStatement(
+                        "SELECT id FROM bills WHERE meter_id = ? AND month = ? AND year = YEAR(CURDATE()) LIMIT 1");
+                psCheck.setInt(1, meterId);
+                psCheck.setString(2, smonth);
+                ResultSet rsCheck = psCheck.executeQuery();
+                if (rsCheck.next()) {
+                    JOptionPane.showMessageDialog(null,
+                            "A bill already exists for this meter and month. Please use the payment screen to pay the existing bill.");
+                    c.closeStatement(psCheck);
+                    c.closeStatement(psMeter);
+                    c.closeConnection();
+                    return;
+                }
+                c.closeStatement(psCheck);
+
+                // Insert into bills (meter_id, month, year, units, total_amount, status)
+                java.sql.PreparedStatement psInsert = c.prepareStatement(
+                        "INSERT INTO bills (meter_id, month, year, units, total_amount, status) VALUES (?, ?, YEAR(CURDATE()), ?, ?, 'Not Paid')");
+                psInsert.setInt(1, meterId);
+                psInsert.setString(2, smonth);
+                psInsert.setInt(3, units);
+                psInsert.setDouble(4, totalBill);
+                psInsert.executeUpdate();
+
+                c.closeStatement(psMeter);
+                c.closeStatement(psInsert);
+                c.closeConnection();
+
+                JOptionPane.showMessageDialog(null, "Customer Bill Updated Successfully");
                 setVisible(false);
-            }catch (Exception E){
+            } catch (Exception E) {
                 E.printStackTrace();
             }
 
-        }else {
+        } else {
             setVisible(false);
         }
     }
+
     public static void main(String[] args) {
         new calculate_bill();
     }

@@ -1,4 +1,4 @@
- package electricity.billing.system;
+package electricity.billing.system;
 
 import javax.swing.*;
 import java.awt.*;
@@ -127,8 +127,9 @@ public class delete_customer extends JFrame implements ActionListener {
 
             try {
                 database c = new database();
-                ResultSet rs = c.statement.executeQuery(
-                        "SELECT * FROM new_customer WHERE meter_no = '" + meter + "'");
+                java.sql.PreparedStatement ps = c.prepareStatement("SELECT * FROM customers WHERE meter_no = ?");
+                ps.setString(1, meter);
+                ResultSet rs = ps.executeQuery();
 
                 if (rs.next()) {
                     lblName.setText(rs.getString("name"));
@@ -141,6 +142,8 @@ public class delete_customer extends JFrame implements ActionListener {
                     JOptionPane.showMessageDialog(null, "No customer found with Meter No: " + meter);
                     clearLabels();
                 }
+                c.closeStatement(ps);
+                c.closeConnection();
             } catch (Exception ex) {
                 ex.printStackTrace();
                 JOptionPane.showMessageDialog(null, "Error fetching customer details: " + ex.getMessage());
@@ -158,22 +161,52 @@ public class delete_customer extends JFrame implements ActionListener {
                     null,
                     "Are you sure you want to delete Customer with Meter No: " + meter + "?",
                     "Confirm Deletion",
-                    JOptionPane.YES_NO_OPTION
-            );
+                    JOptionPane.YES_NO_OPTION);
 
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
                     database c = new database();
 
-                    // Delete from all linked tables
-                    c.statement.executeUpdate("DELETE FROM bill WHERE meter_no = '" + meter + "'");
-                    c.statement.executeUpdate("DELETE FROM meter_info WHERE meter_number = '" + meter + "'");
-                    c.statement.executeUpdate("DELETE FROM Signup WHERE meter_no = '" + meter + "'");
-                    c.statement.executeUpdate("DELETE FROM new_customer WHERE meter_no = '" + meter + "'");
+                    // Delete any customer login entry tied to this meter before removing the
+                    // customer.
+                    // This ensures authentication will no longer succeed after the record is
+                    // deleted.
+                    java.sql.PreparedStatement psFindMeter = c
+                            .prepareStatement("SELECT id FROM meters WHERE meter_number = ?");
+                    psFindMeter.setString(1, meter);
+                    java.sql.ResultSet rsMeter = psFindMeter.executeQuery();
+                    if (rsMeter.next()) {
+                        int meterId = rsMeter.getInt("id");
+                        java.sql.PreparedStatement psDelUser = c
+                                .prepareStatement("DELETE FROM users WHERE meter_id = ? AND role = 'Customer'");
+                        psDelUser.setInt(1, meterId);
+                        psDelUser.executeUpdate();
+                        c.closeStatement(psDelUser);
+                    }
+                    rsMeter.close();
+                    c.closeStatement(psFindMeter);
 
-                    JOptionPane.showMessageDialog(null, "Customer and related records deleted successfully!");
-                    clearLabels();
-                    tfMeter.setText("");
+                    // Also delete any meter record (so the meter cannot be used again)
+                    java.sql.PreparedStatement psDelMeter = c
+                            .prepareStatement("DELETE FROM meters WHERE meter_number = ?");
+                    psDelMeter.setString(1, meter);
+                    psDelMeter.executeUpdate();
+                    c.closeStatement(psDelMeter);
+
+                    // Delete customer record
+                    java.sql.PreparedStatement psDel = c.prepareStatement("DELETE FROM customers WHERE meter_no = ?");
+                    psDel.setString(1, meter);
+                    int affected = psDel.executeUpdate();
+
+                    if (affected > 0) {
+                        JOptionPane.showMessageDialog(null, "Customer and related records deleted successfully!");
+                        clearLabels();
+                        tfMeter.setText("");
+                    } else {
+                        JOptionPane.showMessageDialog(null, "No customer found to delete for Meter No: " + meter);
+                    }
+                    c.closeStatement(psDel);
+                    c.closeConnection();
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     JOptionPane.showMessageDialog(null, "Error deleting record: " + ex.getMessage());

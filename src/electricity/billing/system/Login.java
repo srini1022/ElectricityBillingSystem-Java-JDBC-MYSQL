@@ -80,16 +80,22 @@ public class Login extends JFrame implements ActionListener {
 
              try{
                  database d = new database();
-                 String queryy = "select * from Signup where username = '"+susername+"' and password = '"+spassword+"' and usertype ='"+suser+"'";
-                 ResultSet resultSet = d.statement.executeQuery(queryy);
+                 String sql = "SELECT u.*, m.meter_number FROM users u LEFT JOIN meters m ON u.meter_id = m.id WHERE u.username = ? AND u.password = ? AND u.role = ?";
+                 java.sql.PreparedStatement ps = d.prepareStatement(sql);
+                 ps.setString(1, susername);
+                 ps.setString(2, spassword);
+                 ps.setString(3, suser);
+                 ResultSet resultSet = ps.executeQuery();
 
                  if (resultSet.next()){
-                     String meter = resultSet.getString("meter_no");
+                     String meter = resultSet.getString("meter_number");
                      setVisible(false);
-                     new main_class(suser,meter);
+                     new main_class(suser, meter == null ? "" : meter);
                  }else {
                      JOptionPane.showMessageDialog(null ,"Invalid Login");
                  }
+                 d.closeStatement(ps);
+                 d.closeConnection();
 
              }catch (Exception E){
                  E.printStackTrace();

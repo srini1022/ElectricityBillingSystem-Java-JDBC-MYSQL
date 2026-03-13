@@ -63,7 +63,9 @@ public class generate_bill extends JFrame implements ActionListener {
             database c = new database();
             String smonth =  searchmonthcho.getSelectedItem();
             area.setText("\n Power Limited \n Electricity Bill For Month of "+smonth+",2023\n\n\n");
-            ResultSet resultSet = c.statement.executeQuery("select * from new_customer where meter_no ='"+meter+"'");
+            java.sql.PreparedStatement psCust = c.prepareStatement("SELECT c.* FROM customers c WHERE c.meter_no = ?");
+            psCust.setString(1, meter);
+            ResultSet resultSet = psCust.executeQuery();
             if (resultSet.next()){
                 area.append("\n    Customer Name        : "+resultSet.getString("name"));
                 area.append("\n    Customer Meter Number: "+resultSet.getString("meter_no"));
@@ -75,33 +77,46 @@ public class generate_bill extends JFrame implements ActionListener {
 
             }
 
-            resultSet = c.statement.executeQuery("select * from meter_info where meter_number ='"+meter+"'");
+            java.sql.PreparedStatement psMeter = c.prepareStatement("SELECT * FROM meters WHERE meter_number = ?");
+            psMeter.setString(1, meter);
+            resultSet = psMeter.executeQuery();
             if (resultSet.next()){
                 area.append("\n    Customer Meter Location        : "+resultSet.getString("meter_location"));
                 area.append("\n    Customer Meter Type: "+resultSet.getString("meter_type"));
                 area.append("\n    Customer Phase Code   : "+resultSet.getString("phase_code"));
                 area.append("\n    Customer Bill Type        : "+resultSet.getString("bill_type"));
-                area.append("\n    Customer Days      : "+resultSet.getString("Days"));
-
+                area.append("\n    Customer Days      : "+resultSet.getString("days"));
 
             }
-            resultSet = c.statement.executeQuery("select * from tax");
+
+            java.sql.PreparedStatement psTax = c.prepareStatement("SELECT * FROM taxes ORDER BY effective_from DESC LIMIT 1");
+            resultSet = psTax.executeQuery();
             if (resultSet.next()){
                 area.append("\n    Cost Per Unit        : "+resultSet.getString("cost_per_unit"));
                 area.append("\n   Meter Rent: "+resultSet.getString("meter_rent"));
                 area.append("\n   Service Charge   : "+resultSet.getString("service_charge"));
                 area.append("\n   Service Tax        : "+resultSet.getString("service_tax"));
-                area.append("\n   Swacch Bharat      : "+resultSet.getString("swacch_bharat"));
+                area.append("\n   Swacch Bharat      : "+resultSet.getString("swachh_bharat"));
                 area.append("\n   Fixed Tax     : "+resultSet.getString("fixed_tax"));
 
             }
-            resultSet = c.statement.executeQuery("select * from bill where meter_no = '"+meter+"' and month = '"+searchmonthcho.getSelectedItem()+"'");
+
+            java.sql.PreparedStatement psBill = c.prepareStatement("SELECT b.* FROM bills b JOIN meters m ON b.meter_id = m.id WHERE m.meter_number = ? AND b.month = ? LIMIT 1");
+            psBill.setString(1, meter);
+            psBill.setString(2, searchmonthcho.getSelectedItem());
+            resultSet = psBill.executeQuery();
             if (resultSet.next()) {
                 area.append("\n    Current Month       : " + resultSet.getString("month"));
-                area.append("\n   Units Consumed: " + resultSet.getString("unit"));
-                area.append("\n   Total Charges   : " + resultSet.getString("total_bill"));
-                area.append("\n Total Payable: "+resultSet.getString("total_bill"));
+                area.append("\n   Units Consumed: " + resultSet.getString("units"));
+                area.append("\n   Total Charges   : " + resultSet.getString("total_amount"));
+                area.append("\n Total Payable: "+resultSet.getString("total_amount"));
             }
+
+            c.closeStatement(psCust);
+            c.closeStatement(psMeter);
+            c.closeStatement(psTax);
+            c.closeStatement(psBill);
+            c.closeConnection();
 
 
         }catch (Exception E ){

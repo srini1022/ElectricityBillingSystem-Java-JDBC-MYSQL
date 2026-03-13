@@ -124,13 +124,20 @@ public class newCustomer extends JFrame implements ActionListener {
             String sphone = phoneText.getText();
 
 
-            String query_customer = "insert into new_customer values('"+sname+"','"+smeter+"','"+saddress+"','"+scity+"','"+sstate+"','"+eemail+"','"+sphone+"')";
-            String query_signup = "insert into Signup values('"+smeter+"','','"+sname+"','','')";
-
             try{
                 database c = new database();
-                c.statement.executeUpdate(query_customer);
-                c.statement.executeUpdate(query_signup);
+                java.sql.PreparedStatement ps = c.prepareStatement("INSERT INTO customers (name, meter_no, address, city, state, email, phone_no) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                ps.setString(1, sname);
+                ps.setString(2, smeter);
+                ps.setString(3, saddress);
+                ps.setString(4, scity);
+                ps.setString(5, sstate);
+                ps.setString(6, eemail);
+                ps.setString(7, sphone);
+                ps.executeUpdate();
+
+                c.closeStatement(ps);
+                c.closeConnection();
 
                 JOptionPane.showMessageDialog(null,"Customer details added successfully");
                 setVisible(false);

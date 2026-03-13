@@ -4,7 +4,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.security.cert.Extension;
 import java.sql.ResultSet;
 
 public class view_information extends JFrame implements ActionListener {
@@ -86,7 +85,9 @@ public class view_information extends JFrame implements ActionListener {
 
         try{
             database c = new database();
-            ResultSet resultSet = c.statement.executeQuery("select * from new_customer where meter_no = '"+view+"'");
+            java.sql.PreparedStatement ps = c.prepareStatement("SELECT * FROM customers WHERE meter_no = ?");
+            ps.setString(1, view);
+            ResultSet resultSet = ps.executeQuery();
             if (resultSet.next()){
                 nameLabelText.setText(resultSet.getString("name"));
                 meternoText.setText(resultSet.getString("meter_no"));
@@ -97,10 +98,12 @@ public class view_information extends JFrame implements ActionListener {
                 phoneText.setText(resultSet.getString("phone_no"));
 
             }
+            c.closeStatement(ps);
+            c.closeConnection();
         }catch (Exception e){
             e.printStackTrace();
         }
-         cancel = new JButton("Cancel");
+        cancel = new JButton("Cancel");
         cancel.setBackground(new Color(24,118,242));
         cancel.setForeground(Color.white);
         cancel.setBounds(220,350,120,25);

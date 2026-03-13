@@ -31,10 +31,13 @@ public class customer_details extends JFrame implements ActionListener {
 
         try{
             database c= new database();
-            ResultSet resultSet = c.statement.executeQuery("select * from new_customer");
+            java.sql.PreparedStatement ps = c.prepareStatement("SELECT meter_no FROM customers");
+            ResultSet resultSet = ps.executeQuery();
             while (resultSet.next()){
                 searchMeterCho.add(resultSet.getString("meter_no"));
             }
+            c.closeStatement(ps);
+            c.closeConnection();
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -49,10 +52,13 @@ public class customer_details extends JFrame implements ActionListener {
 
         try{
             database c= new database();
-            ResultSet resultSet = c.statement.executeQuery("select * from new_customer");
+            java.sql.PreparedStatement ps = c.prepareStatement("SELECT name FROM customers");
+            ResultSet resultSet = ps.executeQuery();
             while (resultSet.next()){
                 searchNameCho.add(resultSet.getString("name"));
             }
+            c.closeStatement(ps);
+            c.closeConnection();
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -60,8 +66,11 @@ public class customer_details extends JFrame implements ActionListener {
         table = new JTable();
         try{
             database c =new database();
-            ResultSet resultSet = c.statement.executeQuery("select * from new_customer");
+            java.sql.PreparedStatement ps = c.prepareStatement("SELECT * FROM customers");
+            ResultSet resultSet = ps.executeQuery();
             table.setModel(DbUtils.resultSetToTableModel(resultSet));
+            c.closeStatement(ps);
+            c.closeConnection();
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -96,11 +105,15 @@ public class customer_details extends JFrame implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource()==search){
-            String query_search = "select * from new_customer where meter_no = '"+searchMeterCho.getSelectedItem()+"' and name = '"+searchNameCho.getSelectedItem()+"'" ;
             try{
                 database c = new database();
-                ResultSet resultSet = c.statement.executeQuery(query_search);
+                java.sql.PreparedStatement ps = c.prepareStatement("SELECT * FROM customers WHERE meter_no = ? AND name = ?");
+                ps.setString(1, searchMeterCho.getSelectedItem());
+                ps.setString(2, searchNameCho.getSelectedItem());
+                ResultSet resultSet = ps.executeQuery();
                 table.setModel(DbUtils.resultSetToTableModel(resultSet));
+                c.closeStatement(ps);
+                c.closeConnection();
             }catch (Exception E){
                 E.printStackTrace();
             }

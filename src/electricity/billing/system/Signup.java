@@ -70,10 +70,15 @@ public class Signup extends JFrame implements ActionListener {
             public void focusLost(FocusEvent e) {
                 try{
                     database c = new database();
-                    ResultSet resultSet = c.statement.executeQuery("select * from Signup  where meter_no = '"+meterText.getText()+"'");
+                    String sql = "SELECT name FROM customers WHERE meter_no = ?";
+                    java.sql.PreparedStatement ps = c.prepareStatement(sql);
+                    ps.setString(1, meterText.getText().trim());
+                    ResultSet resultSet = ps.executeQuery();
                     if (resultSet.next()){
                         nameText.setText(resultSet.getString("name"));
                     }
+                    c.closeStatement(ps);
+                    c.closeConnection();
 
                 }catch (Exception E){
                     E.printStackTrace();
@@ -147,13 +152,41 @@ public class Signup extends JFrame implements ActionListener {
             String smeter = meterText.getText();
             try{
                 database c = new database();
-                String query= null;
                 if (sloginAs.equals("Admin")) {
-                    query = "insert into Signup values('" + smeter + "', '" + susername + "', '" + sname + "','" + spassword + "','" + sloginAs + "')";
-                }else {
-                    query = "update Signup set username = '"+susername+"', password = '"+spassword+"', usertype = '"+sloginAs+"' where meter_no = '"+smeter+"'";
+                    String sql = "INSERT INTO users (username, password, name, role) VALUES (?, ?, ?, ?)";
+                    java.sql.PreparedStatement ps = c.prepareStatement(sql);
+                    ps.setString(1, susername);
+                    ps.setString(2, spassword);
+                    ps.setString(3, sname);
+                    ps.setString(4, sloginAs);
+                    ps.executeUpdate();
+                    c.closeStatement(ps);
+                } else {
+                    // Customer signup: validate meter exists and link user to meter
+                    String findMeter = "SELECT id FROM meters WHERE meter_number = ?";
+                    java.sql.PreparedStatement psFind = c.prepareStatement(findMeter);
+                    psFind.setString(1, smeter);
+                    ResultSet rs = psFind.executeQuery();
+                    if (rs.next()) {
+                        int meterId = rs.getInt("id");
+                        String insertUser = "INSERT INTO users (username, password, name, role, meter_id) VALUES (?, ?, ?, ?, ?)";
+                        java.sql.PreparedStatement psIns = c.prepareStatement(insertUser);
+                        psIns.setString(1, susername);
+                        psIns.setString(2, spassword);
+                        psIns.setString(3, sname);
+                        psIns.setString(4, sloginAs);
+                        psIns.setInt(5, meterId);
+                        psIns.executeUpdate();
+                        c.closeStatement(psIns);
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Meter number not found. Please register meter first.");
+                        c.closeStatement(psFind);
+                        c.closeConnection();
+                        return;
+                    }
+                    c.closeStatement(psFind);
                 }
-                 c.statement.executeUpdate(query);
+                c.closeConnection();
 
                 JOptionPane.showMessageDialog(null,"Account Created");
                 setVisible(false);

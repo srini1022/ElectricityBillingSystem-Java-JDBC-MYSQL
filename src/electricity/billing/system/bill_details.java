@@ -19,9 +19,20 @@ public class bill_details extends JFrame {
 
         try{
             database c = new database();
-            String query_bill = "select * from bill where meter_no = '"+meter+"'";
-            ResultSet resultSet = c.statement.executeQuery(query_bill);
+            java.sql.PreparedStatement psMeter = c.prepareStatement("SELECT id FROM meters WHERE meter_number = ?");
+            psMeter.setString(1, meter);
+            ResultSet rsMeter = psMeter.executeQuery();
+            int meterId = -1;
+            if (rsMeter.next()) meterId = rsMeter.getInt("id");
+
+            java.sql.PreparedStatement ps = c.prepareStatement("SELECT * FROM bills WHERE meter_id = ? ORDER BY created_at DESC");
+            ps.setInt(1, meterId);
+            ResultSet resultSet = ps.executeQuery();
             table.setModel(DbUtils.resultSetToTableModel(resultSet));
+
+            c.closeStatement(psMeter);
+            c.closeStatement(ps);
+            c.closeConnection();
         }catch (Exception e){
             e.printStackTrace();
         }
